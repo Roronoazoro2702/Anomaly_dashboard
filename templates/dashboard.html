@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anomalous Events Dashboard - Flexible Time Ranges</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+            border-bottom: 2px solid #e1e8ed;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+        
+        .cloud-provider-selector {
+            background: rgba(46, 204, 113, 0.1);
+            border: 2px solid rgba(46, 204, 113, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .provider-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .provider-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 140px;
+            justify-content: center;
+        }
+        
+        .provider-btn:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .provider-btn.active {
+            background: #27ae60;
+            box-shadow: 0 4px 8px rgba(39, 174, 96, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        .provider-icon {
+            font-size: 1.2em;
+        }
+        
+        .event-type-selector {
+            background: rgba(155, 89, 182, 0.1);
+            border: 2px solid rgba(155, 89, 182, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .event-type-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .event-type-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 140px;
+            justify-content: center;
+        }
+        
+        .event-type-btn:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .event-type-btn.active {
+            background: #9b59b6;
+            box-shadow: 0 4px 8px rgba(155, 89, 182, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        .event-type-icon {
+            font-size: 1.2em;
+        }
+        
+        .kubernetes-selector {
+            background: rgba(52, 73, 94, 0.1);
+            border: 2px solid rgba(52, 73, 94, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .kubernetes-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .kubernetes-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 140px;
+            justify-content: center;
+        }
+        
+        .kubernetes-btn:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .kubernetes-btn.active {
+            background: #34495e;
+            box-shadow: 0 4px 8px rgba(52, 73, 94, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        .kubernetes-icon {
+            font-size: 1.2em;
+        }
+        
+        .unified-time-selector {
+            background: rgba(52, 152, 219, 0.1);
+            border: 2px solid rgba(52, 152, 219, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .time-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .unified-time-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            min-width: 100px;
+            font-weight: 500;
+        }
+        
+        .unified-time-btn:hover {
+            background: #7f8c8d;
+            transform: translateY(-1px);
+        }
+        
+        .unified-time-btn.active {
+            background: #e74c3c;
+            box-shadow: 0 3px 6px rgba(231, 76, 60, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        .view-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .view-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .view-btn:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+        
+        .view-btn.active {
+            background: #f39c12;
+            box-shadow: 0 4px 8px rgba(243, 156, 18, 0.3);
+        }
+        
+        .day-selector {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .day-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            min-width: 85px;
+        }
+        
+        .day-btn:hover {
+            background: #7f8c8d;
+            transform: translateY(-1px);
+        }
+        
+        .day-btn.active {
+            background: #e67e22;
+            box-shadow: 0 3px 6px rgba(230, 126, 34, 0.3);
+        }
+        
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .status-item {
+            text-align: center;
+        }
+        
+        .status-item .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            display: block;
+            color: #3498db;
+        }
+        
+        .status-item .label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .summary-button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .summary-button:hover {
+            background: #229954;
+        }
+        
+        .auto-refresh-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-top: 8px;
+        }
+        
+        .refresh-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .charts-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e1e8ed;
+            transition: all 0.3s ease;
+        }
+        
+        .chart-container:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+        
+        .chart-title {
+            font-size: 1.4em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .chart-canvas {
+            height: 500px;
+            position: relative;
+        }
+        
+        .chart-canvas.medium {
+            height: 400px;
+        }
+        
+        .chart-canvas.small {
+            height: 300px;
+        }
+        
+        .account-details {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .account-item {
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .account-item:hover {
+            background: #f1f2f6;
+            border-color: #3498db;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .account-item .account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .account-item .account-id {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .account-item .account-events {
+            background: #3498db;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        
+        .account-item .account-tenant {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        .detection-types-toggle {
+            color: #3498db;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .detection-types-toggle:hover {
+            color: #2980b9;
+        }
+        
+        .detection-breakdown {
+            margin-top: 10px;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 5px;
+            border-left: 3px solid #3498db;
+            display: none;
+        }
+        
+        .detection-breakdown.expanded {
+            display: block;
+        }
+        
+        .detection-type-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 0;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        
+        .detection-type-item:last-child {
+            border-bottom: none;
+        }
+        
+        .detection-type-name {
+            font-size: 0.85em;
+            color: #2c3e50;
+        }
+        
+        .detection-type-count {
+            background: #e67e22;
+            color: white;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .tenant-section {
+            margin-bottom: 25px;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .tenant-header {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tenant-header:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+        }
+        
+        .tenant-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .tenant-stats {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .tenant-stat {
+            text-align: center;
+        }
+        
+        .tenant-stat .number {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .tenant-stat .label {
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+        
+        .tenant-accounts {
+            display: none;
+            background: #f8f9fa;
+            padding: 15px;
+        }
+        
+        .tenant-accounts.expanded {
+            display: block;
+        }
+        
+        .last-updated {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1em;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .success-message {
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .info-message {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .warning-message {
+            background: #f39c12;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .chart-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background-color: #27ae60;
+        }
+        
+        .status-offline {
+            background-color: #e74c3c;
+        }
+        
+        .status-warning {
+            background-color: #f39c12;
+        }
+        
+        .toggle-icon {
+            transition: transform 0.3s;
+        }
+        
+        .toggle-icon.expanded {
+            transform: rotate(180deg);
+        }
+        
+        .time-range-info {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+            color: #27ae60;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 1200px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .view-selector, .unified-time-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .time-buttons {
+                justify-content: center;
+                gap: 6px;
+            }
+            
+            .unified-time-btn {
+                min-width: 90px;
+                padding: 6px 12px;
+            }
+            
+            .status-bar {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 10px;
+                padding: 15px;
+            }
+            
+            .status-item .value {
+                font-size: 1.5em;
+            }
+            
+            .status-item .label {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>Anomalous Events Dashboard</h1>
+            <div class="subtitle">Multi-Cloud Tenant + Account Level Monitoring</div>
+            
+            <!-- Cloud Provider Selector -->
+            <div class="cloud-provider-selector">
+                <div style="font-weight: bold; color: #2c3e50; margin-bottom: 10px; text-align: center;">Cloud Provider:</div>
+                <div class="provider-buttons">
+                    <button class="provider-btn active" onclick="selectCloudProvider('aws')" data-provider="aws">
+                        <i class="provider-icon">☁</i> AWS Events
+                    </button>
+                    <button class="provider-btn" onclick="selectCloudProvider('gcp')" data-provider="gcp">
+                        <i class="provider-icon">🌐</i> GCP Events
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Kubernetes Selector -->
+            <div class="kubernetes-selector">
+                <div style="font-weight: bold; color: #2c3e50; margin-bottom: 10px; text-align: center;">Kubernetes:</div>
+                <div class="kubernetes-buttons">
+                    <button class="kubernetes-btn active" onclick="selectKubernetes(false)" data-kubernetes="false">
+                        <i class="kubernetes-icon">☁️</i> Cloud Events
+                    </button>
+                    <button class="kubernetes-btn" onclick="selectKubernetes(true)" data-kubernetes="true">
+                        <i class="kubernetes-icon">☸️</i> Kubernetes Events
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Event Type Selector -->
+            <div class="event-type-selector">
+                <div style="font-weight: bold; color: #2c3e50; margin-bottom: 10px; text-align: center;">Event Type:</div>
+                <div class="event-type-buttons">
+                    <button class="event-type-btn active" onclick="selectEventType('anomaly')" data-event-type="anomaly">
+                        <i class="event-type-icon">⚠️</i> Anomaly Events
+                    </button>
+                    <button class="event-type-btn" onclick="selectEventType('total')" data-event-type="total">
+                        <i class="event-type-icon">📊</i> Total Events
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Unified Time Selector -->
+            <div class="unified-time-selector">
+                <div style="font-weight: bold; color: #2c3e50; margin-bottom: 15px; text-align: center;">Select Time Period:</div>
+                
+                <div class="time-buttons">
+                    <button class="unified-time-btn active" onclick="selectTimeOption('day', 0)" data-type="day" data-value="0">Today Only</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('day', 1)" data-type="day" data-value="1">Yesterday</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('day', 2)" data-type="day" data-value="2">2 Days Ago</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('day', 3)" data-type="day" data-value="3">3 Days Ago</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('day', 4)" data-type="day" data-value="4">4 Days Ago</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('day', 5)" data-type="day" data-value="5">5 Days Ago</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('day', 6)" data-type="day" data-value="6">6 Days Ago</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('day', 7)" data-type="day" data-value="7">1 Week Ago</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('range', 14)" data-type="range" data-value="14">Last 14 Days</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('range', 30)" data-type="range" data-value="30">Last 30 Days</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('range', 60)" data-type="range" data-value="60">Last 60 Days</button>
+                    <button class="unified-time-btn" onclick="selectTimeOption('range', 90)" data-type="range" data-value="90">Last 90 Days</button>
+                </div>
+            </div>
+            
+            <div class="time-range-info" id="time-range-info">
+                Current View: Today Only
+            </div>
+            
+            <div class="view-selector">
+                <button class="view-btn active" onclick="switchView('tenant')">Tenant View</button>
+                <button class="view-btn" onclick="switchView('account')">Account View</button>
+                <button class="view-btn" onclick="switchView('combined')">Combined View</button>
+                <button class="view-btn" onclick="switchView('hierarchy')">Hierarchy View</button>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="value" id="total-events">-</span>
+                <span class="label" id="total-events-label">Total Events (Today)</span>
+            </div>
+            <div class="status-item">
+                <span class="value" id="total-events-today">-</span>
+                <span class="label">Events Today</span>
+            </div>
+            <div class="status-item">
+                <span class="value" id="total-tenants">-</span>
+                <span class="label">Total Tenants</span>
+            </div>
+            <div class="status-item">
+                <span class="value" id="total-accounts">-</span>
+                <span class="label">Total Accounts</span>
+            </div>
+            <div class="status-item">
+                <span class="value" id="active-tenants">-</span>
+                <span class="label" id="active-tenants-label">Active Tenants (Today)</span>
+            </div>
+            <div class="status-item">
+                <span class="value" id="active-accounts">-</span>
+                <span class="label" id="active-accounts-label">Active Accounts (Today)</span>
+            </div>
+            <div class="status-item">
+                <span class="status-indicator" id="connection-status"></span>
+                <span id="connection-text">Connecting...</span>
+            </div>
+            <div class="status-item">
+                <div class="button-group">
+                    <button class="summary-button" onclick="showAccountSummary()">Summary</button>
+                    <div class="auto-refresh-status">
+                        <div class="refresh-indicator"></div>
+                        <span>Auto-refresh: ON</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="message-container"></div>
+        
+        <div class="charts-grid">
+            <!-- Main Chart Area -->
+            <div id="main-chart-area">
+                <div class="chart-container">
+                    <div class="chart-title" id="main-chart-title">Anomalous Events by Tenant</div>
+                    <div class="chart-canvas">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Secondary Charts Row -->
+            <div class="charts-row">
+                <!-- Daily Trend Chart -->
+                <div class="chart-container">
+                    <div class="chart-title">Daily Anomalous Events Trend</div>
+                    <div class="chart-canvas small">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Detection Types Chart -->
+                <div class="chart-container">
+                    <div class="chart-title">Top Detection Types</div>
+                    <div class="chart-canvas small">
+                        <canvas id="detectionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hierarchy View (Initially Hidden) -->
+            <div id="hierarchy-container" class="chart-container" style="display: none;">
+                <div class="chart-title" id="hierarchy-title">Tenant-Account Hierarchy</div>
+                <div id="hierarchy-content"></div>
+            </div>
+        </div>
+        
+        <div class="last-updated" id="last-updated">
+            <span class="status-indicator status-warning"></span>
+            Last updated: Loading...
+        </div>
+    </div>
+
+    <script>
+        let mainChartInstance = null;
+        let dailyChartInstance = null;
+        let detectionChartInstance = null;
+        let dashboardData = {};
+        let currentView = 'tenant';
+        let currentTimeType = 'day';
+        let currentTimeValue = 0;
+        let currentTimeRange = 7;
+        let currentDaysBack = 0;
+        let currentCloudProvider = 'aws';
+        let currentEventType = 'anomaly';
+        let currentKubernetesEnabled = false;
+        let isLoading = false;
+        let refreshTimer = null;
+        let autoRefreshInterval = 3 * 60 * 1000;
+        let lastRequestTime = 0;
+        let requestDebounceTime = 500; // 500ms debounce
+        let dataCache = new Map(); // Cache for API responses
+        let cacheTimeout = 30000; // 30 seconds cache
+        let requestTimeout = 90000; // 90 seconds timeout for production
+
+        async function initDashboard() {
+            currentTimeType = 'day';
+            currentTimeValue = 0;
+            currentTimeRange = 7;
+            currentDaysBack = 0;
+            currentCloudProvider = 'aws';
+            currentEventType = 'anomaly';
+            currentKubernetesEnabled = false;
+            
+            await refreshData();
+            startAutoRefresh();
+        }
+
+        async function selectCloudProvider(provider) {
+            if (currentCloudProvider === provider) return; // No change needed
+            
+            document.querySelectorAll('.provider-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentCloudProvider = provider;
+            showMessage(`Switching to ${provider.toUpperCase()} events...`, 'info');
+            
+            // Update UI immediately
+            updateChartTitle();
+            
+            await debouncedRefreshData();
+            showMessage(`Loaded ${provider.toUpperCase()} events successfully`, 'success');
+        }
+
+        async function selectKubernetes(enabled) {
+            if (currentKubernetesEnabled === enabled) return; // No change needed
+            
+            document.querySelectorAll('.kubernetes-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentKubernetesEnabled = enabled;
+            let kubernetesLabel = enabled ? 'Kubernetes' : 'Cloud';
+            showMessage(`Switching to ${kubernetesLabel} events...`, 'info');
+            
+            // Update UI immediately
+            updateChartTitle();
+            
+            await debouncedRefreshData();
+            showMessage(`Loaded ${kubernetesLabel} events successfully`, 'success');
+        }
+
+        async function selectEventType(eventType) {
+            if (currentEventType === eventType) return; // No change needed
+            
+            document.querySelectorAll('.event-type-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentEventType = eventType;
+            let eventTypeLabel;
+            if (eventType === 'anomaly') {
+                eventTypeLabel = 'Anomaly';
+            } else if (eventType === 'total') {
+                eventTypeLabel = 'Total';
+            }
+            showMessage(`Switching to ${eventTypeLabel} events...`, 'info');
+            
+            // Update UI immediately
+            updateChartTitle();
+            
+            await debouncedRefreshData();
+            showMessage(`Loaded ${eventTypeLabel} events successfully`, 'success');
+        }
+
+
+
+        function updateChartTitle() {
+            const title = document.getElementById('main-chart-title');
+            if (!title) return;
+            
+            let timeDescription = '';
+            if (currentTimeType === 'range') {
+                timeDescription = `${currentTimeRange} days total`;
+            } else {
+                timeDescription = getDayLabel(currentDaysBack);
+            }
+            
+            const providerText = currentCloudProvider.toUpperCase();
+            let eventTypeText;
+            if (currentEventType === 'anomaly') {
+                eventTypeText = 'Anomalous';
+            } else if (currentEventType === 'total') {
+                eventTypeText = 'Total';
+            }
+            
+            let kubernetesText = currentKubernetesEnabled ? 'Kubernetes ' : '';
+            
+            switch (currentView) {
+                case 'tenant':
+                    title.textContent = `${providerText} ${kubernetesText}${eventTypeText} Events by Tenant (${timeDescription})`;
+                    break;
+                case 'account':
+                    title.textContent = `${providerText} ${kubernetesText}${eventTypeText} Events by Account (${timeDescription})`;
+                    break;
+                case 'combined':
+                    title.textContent = `${providerText} ${kubernetesText}${eventTypeText} Events - Combined View (${timeDescription})`;
+                    break;
+            }
+            
+            // Also update hierarchy title if it exists
+            const hierarchyTitle = document.getElementById('hierarchy-title');
+            if (hierarchyTitle) {
+                let eventTypeLabel;
+                if (currentEventType === 'anomaly') {
+                    eventTypeLabel = 'Anomaly';
+                } else if (currentEventType === 'total') {
+                    eventTypeLabel = 'Total';
+                }
+                let kubernetesLabel = currentKubernetesEnabled ? 'Kubernetes ' : '';
+                hierarchyTitle.textContent = `Tenant-Account Hierarchy (${kubernetesLabel}${eventTypeLabel} Events)`;
+            }
+        }
+
+        function updateStatusBarLabels() {
+            const totalEventsLabel = document.getElementById('total-events-label');
+            const activeTenantsLabel = document.getElementById('active-tenants-label');
+            const activeAccountsLabel = document.getElementById('active-accounts-label');
+            
+            let timeDescription = '';
+            let eventTypeLabel = currentEventType === 'anomaly' ? 'Anomaly' : 'Total';
+            let kubernetesLabel = currentKubernetesEnabled ? 'Kubernetes ' : '';
+            
+            if (currentTimeType === 'range') {
+                timeDescription = `${currentTimeRange} days range`;
+                if (totalEventsLabel) totalEventsLabel.textContent = `Total Events (${currentTimeRange}d Range)`;
+                if (activeTenantsLabel) activeTenantsLabel.textContent = `Active Tenants (${currentTimeRange}d Range)`;
+                if (activeAccountsLabel) activeAccountsLabel.textContent = `Active Accounts (${currentTimeRange}d Range)`;
+            } else {
+                const dayLabel = getDayLabel(currentDaysBack);
+                timeDescription = dayLabel;
+                if (totalEventsLabel) totalEventsLabel.textContent = `Total Events (${dayLabel})`;
+                if (activeTenantsLabel) activeTenantsLabel.textContent = `Active Tenants (${dayLabel})`;
+                if (activeAccountsLabel) activeAccountsLabel.textContent = `Active Accounts (${dayLabel})`;
+            }
+            
+            // Update the time range info to be more descriptive
+            const timeRangeInfo = document.getElementById('time-range-info');
+            if (timeRangeInfo) {
+                timeRangeInfo.textContent = `Current View: ${timeDescription} (${kubernetesLabel}${eventTypeLabel} events)`;
+            }
+        }
+
+        function processTimerangeData(data) {
+            const tenants = data.tenants || {};
+            const accounts = data.accounts || {};
+            const dailyTotals = data.daily_totals || {};
+            const warnings = data.warnings || {};
+            
+            // Show warnings if any
+            if (warnings.timeout_issues) {
+                showMessage(`⚠️ ${warnings.timeout_issues} ${warnings.recommendation || ''}`, 'warning');
+            }
+            
+            // Store raw data first
+            dashboardData = {
+                tenants: tenants,
+                accounts: accounts,
+                daily_totals: dailyTotals,
+                today_tenants: {},
+                today_accounts: {},
+                selected_day_tenants: {},
+                selected_day_accounts: {},
+                summary: data.summary || {},
+                total_events: data.summary?.total_events || 0,
+                total_tenants: data.summary?.total_tenants || 0,
+                total_accounts: data.summary?.total_accounts || 0,
+                timerange_days: data.timerange_days || currentTimeRange,
+                cloud_provider: data.cloud_provider || currentCloudProvider,
+                status: 'success',
+                warnings: warnings
+            };
+            
+            // Calculate today's data
+            const today = new Date().toISOString().split('T')[0];
+            for (const [tenant, data] of Object.entries(tenants)) {
+                dashboardData.today_tenants[tenant] = data.daily[today] || 0;
+            }
+            
+            for (const [accountKey, data] of Object.entries(accounts)) {
+                dashboardData.today_accounts[accountKey] = data.daily[today] || 0;
+            }
+            
+            // Calculate selected day data based on current time selection
+            const { selectedDay_Tenants, selectedDay_Accounts } = getSelectedDateData(tenants, accounts);
+            dashboardData.selected_day_tenants = selectedDay_Tenants;
+            dashboardData.selected_day_accounts = selectedDay_Accounts;
+            
+            // Calculate totals consistently for the selected time period
+            dashboardData.total_events_today = Object.values(dashboardData.today_tenants).reduce((sum, count) => sum + count, 0);
+            dashboardData.total_events_selected = Object.values(dashboardData.selected_day_tenants).reduce((sum, count) => sum + count, 0);
+            
+            // Calculate active counts for the selected time period
+            dashboardData.active_tenants = Object.values(tenants).filter(t => t.total > 0).length;
+            dashboardData.active_tenants_today = Object.values(dashboardData.today_tenants).filter(count => count > 0).length;
+            dashboardData.active_tenants_selected = Object.values(dashboardData.selected_day_tenants).filter(count => count > 0).length;
+            
+            dashboardData.active_accounts = Object.values(accounts).filter(a => a.total > 0).length;
+            dashboardData.active_accounts_today = Object.values(dashboardData.today_accounts).filter(count => count > 0).length;
+            dashboardData.active_accounts_selected = Object.values(dashboardData.selected_day_accounts).filter(count => count > 0).length;
+            
+            updateConnectionStatus(true);
+            updateStatusBar();
+            updateAllCharts();
+            updateTimestamp();
+        }
+
+        async function refreshData() {
+            if (isLoading) return; // Prevent multiple simultaneous requests
+            
+            // Create cache key
+            const cacheKey = `${currentTimeRange}-${currentCloudProvider}-${currentEventType}-${currentKubernetesEnabled}`;
+            
+            // Check cache first
+            const cachedData = dataCache.get(cacheKey);
+            if (cachedData && (Date.now() - cachedData.timestamp) < cacheTimeout) {
+                processTimerangeData(cachedData.data);
+                updateConnectionStatus(true);
+                updateStatusBar();
+                updateStatusBarLabels();
+                updateAllCharts();
+                updateTimestamp();
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await axios.get(`/api/timerange_data?days=${currentTimeRange}&provider=${currentCloudProvider}&event_type=${currentEventType}&kubernetes=${currentKubernetesEnabled}`, {
+                    timeout: requestTimeout
+                });
+                
+                if (response.data.status === 'success') {
+                    // Check for timeout issues in the response
+                    const data = response.data.data;
+                    const failedQueries = data.summary?.failed_queries || {};
+                    const timeoutCount = failedQueries.timeout || 0;
+                    const totalQueries = data.summary?.total_queries || 0;
+                    
+                    // If more than 50% of queries timed out, show a warning
+                    if (timeoutCount > 0 && totalQueries > 0 && (timeoutCount / totalQueries) > 0.5) {
+                        showMessage(`⚠️ ${timeoutCount} out of ${totalQueries} queries timed out. Data may be incomplete. Consider selecting a shorter time range.`, 'warning');
+                    }
+                    
+                    // Cache the response
+                    dataCache.set(cacheKey, {
+                        data: data,
+                        timestamp: Date.now()
+                    });
+                    
+                    processTimerangeData(data);
+                    updateConnectionStatus(true);
+                    updateStatusBar();
+                    updateStatusBarLabels();
+                    updateAllCharts();
+                    updateTimestamp();
+                    
+                    // Force update hierarchy view if it's currently displayed
+                    if (currentView === 'hierarchy') {
+                        updateHierarchyView();
+                    }
+                } else {
+                    throw new Error(response.data.error_message || 'Server returned error status');
+                }
+                
+            } catch (error) {
+                updateConnectionStatus(false, 'Connection Error');
+                
+                let errorMsg = 'Failed to load data';
+                if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                    errorMsg = `Request timed out after ${requestTimeout/1000} seconds. The data may be too large for the selected time range. Try selecting a shorter time period.`;
+                } else if (error.response) {
+                    errorMsg += ` (${error.response.status}: ${error.response.statusText})`;
+                } else if (error.message) {
+                    errorMsg += `: ${error.message}`;
+                }
+                
+                showMessage(errorMsg, 'error');
+                
+                // Clear any existing data to prevent showing stale information
+                dashboardData = {
+                    tenants: {},
+                    accounts: {},
+                    daily_totals: {},
+                    today_tenants: {},
+                    today_accounts: {},
+                    selected_day_tenants: {},
+                    selected_day_accounts: {},
+                    summary: {total_tenants: 0, total_accounts: 0, total_events: 0},
+                    total_events: 0,
+                    total_events_today: 0,
+                    total_events_selected: 0,
+                    total_tenants: 0,
+                    total_accounts: 0,
+                    active_tenants: 0,
+                    active_tenants_today: 0,
+                    active_tenants_selected: 0,
+                    active_accounts: 0,
+                    active_accounts_today: 0,
+                    active_accounts_selected: 0,
+                    status: 'error'
+                };
+                
+                // Update UI to show no data
+                updateStatusBar();
+                updateAllCharts();
+                updateTimestamp();
+                
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function switchView(view) {
+            if (currentView === view) return; // No change needed
+            
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentView = view;
+            
+            const hierarchyContainer = document.getElementById('hierarchy-container');
+            const mainChartArea = document.getElementById('main-chart-area');
+            
+            if (view === 'hierarchy') {
+                hierarchyContainer.style.display = 'block';
+                mainChartArea.style.display = 'none';
+                updateHierarchyView();
+                // Update hierarchy title with event type
+                const hierarchyTitle = document.getElementById('hierarchy-title');
+                let eventTypeLabel;
+                if (currentEventType === 'anomaly') {
+                    eventTypeLabel = 'Anomaly';
+                } else if (currentEventType === 'total') {
+                    eventTypeLabel = 'Total';
+                }
+                let kubernetesLabel = currentKubernetesEnabled ? 'Kubernetes ' : '';
+                hierarchyTitle.textContent = `Tenant-Account Hierarchy (${kubernetesLabel}${eventTypeLabel} Events)`;
+            } else {
+                hierarchyContainer.style.display = 'none';
+                mainChartArea.style.display = 'block';
+                updateMainChart();
+            }
+            
+            updateChartTitle();
+        }
+
+        function startAutoRefresh() {
+            function scheduleNextRefresh() {
+                refreshTimer = setTimeout(() => {
+                    refreshData().then(() => {
+                        scheduleNextRefresh();
+                    }).catch((error) => {
+                        scheduleNextRefresh();
+                    });
+                }, autoRefreshInterval);
+            }
+            
+            scheduleNextRefresh();
+        }
+
+        async function debouncedRefreshData() {
+            const now = Date.now();
+            if (now - lastRequestTime < requestDebounceTime) {
+                // Cancel previous request and wait
+                await new Promise(resolve => setTimeout(resolve, requestDebounceTime));
+            }
+            lastRequestTime = now;
+            
+            // Clear cache for new data type combinations
+            const cacheKey = `${currentTimeRange}-${currentCloudProvider}-${currentEventType}-${currentKubernetesEnabled}`;
+            dataCache.delete(cacheKey);
+            
+            return await refreshData();
+        }
+
+        function clearDataCache() {
+            dataCache.clear();
+        }
+
+        function getDayLabel(daysBack) {
+            switch(daysBack) {
+                case 0: return 'Today';
+                case 1: return 'Yesterday';
+                case 2: return '2 Days Ago';
+                case 3: return '3 Days Ago';
+                case 4: return '4 Days Ago';
+                case 5: return '5 Days Ago';
+                case 6: return '6 Days Ago';
+                case 7: return '1 Week Ago';
+                default: return `${daysBack} Days Ago`;
+            }
+        }
+
+        function getDateForDaysBack(daysBack) {
+            const date = new Date();
+            date.setDate(date.getDate() - daysBack);
+            return date.toISOString().split('T')[0];
+        }
+
+        function getSelectedDateData(tenantData, accountData) {
+            // This function ensures consistent data retrieval based on current time selection
+            const selectedDay_Tenants = {};
+            const selectedDay_Accounts = {};
+            
+            if (currentTimeType === 'range') {
+                // For range mode, use total aggregated data
+                for (const [tenant, data] of Object.entries(tenantData)) {
+                    selectedDay_Tenants[tenant] = data.total || 0;
+                }
+                
+                for (const [accountKey, data] of Object.entries(accountData)) {
+                    selectedDay_Accounts[accountKey] = data.total || 0;
+                }
+            } else {
+                // For single day mode, use specific date
+                const selectedDate = getDateForDaysBack(currentDaysBack);
+                for (const [tenant, data] of Object.entries(tenantData)) {
+                    selectedDay_Tenants[tenant] = data.daily[selectedDate] || 0;
+                }
+                
+                for (const [accountKey, data] of Object.entries(accountData)) {
+                    selectedDay_Accounts[accountKey] = data.daily[selectedDate] || 0;
+                }
+            }
+            
+            return { selectedDay_Tenants, selectedDay_Accounts };
+        }
+
+        async function showAccountSummary() {
+            try {
+                // Use current dashboard data instead of making a separate API call
+                // This ensures consistency with the currently displayed data
+                const tenantData = dashboardData.tenants || {};
+                const selectedDayTenantData = dashboardData.selected_day_tenants || {};
+                
+                if (Object.keys(tenantData).length === 0) {
+                    showMessage('No data available for account summary', 'error');
+                    return;
+                }
+                
+                let summaryHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+                
+                // Sort tenants by selected day events (consistent with hierarchy view)
+                const sortedTenants = Object.entries(selectedDayTenantData)
+                    .sort((a, b) => b[1] - a[1]);
+                
+                sortedTenants.forEach(([tenantName, selectedDayEvents]) => {
+                    const tenantInfo = tenantData[tenantName] || {};
+                    const accounts = tenantInfo.accounts || {};
+                    
+                    summaryHtml += `
+                        <div class="tenant-section">
+                            <div class="tenant-header">
+                                <span class="tenant-name">${tenantName}</span>
+                                <span>1 accounts</span>
+                            </div>
+                            <div class="tenant-accounts expanded">
+                    `;
+                    
+                    // Process accounts for this tenant with consistent detection type calculation
+                    Object.entries(accounts).forEach(([accountId, accountInfo]) => {
+                        let accountEvents = 0;
+                        let relevantDetectionTypes = 0;
+                        
+                        if (currentTimeType === 'range') {
+                            accountEvents = accountInfo.total || 0;
+                            relevantDetectionTypes = Object.keys(accountInfo.detections || {}).length;
+                        } else {
+                            const selectedDate = getDateForDaysBack(currentDaysBack);
+                            accountEvents = accountInfo.daily[selectedDate] || 0;
+                            
+                            // Calculate detection types that have events in selected day
+                            if (accountEvents > 0) {
+                                const detections = accountInfo.detections || {};
+                                const totalAccountEvents = accountInfo.total || 1;
+                                const ratio = accountEvents / totalAccountEvents;
+                                
+                                relevantDetectionTypes = Object.entries(detections).filter(([type, count]) => {
+                                    const scaledCount = Math.round(count * ratio);
+                                    return scaledCount > 0;
+                                }).length;
+                            }
+                        }
+                        
+                        // Calculate active days
+                        const activeDays = Object.values(accountInfo.daily || {}).filter(count => count > 0).length;
+                        
+                        summaryHtml += `
+                            <div class="account-item">
+                                <div class="account-header">
+                                    <span class="account-id">${accountId}</span>
+                                    <span class="account-events">${accountEvents} events</span>
+                                </div>
+                                <div class="account-details">
+                                    Active Days: ${activeDays} | Detection Types: ${relevantDetectionTypes}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    summaryHtml += '</div></div>';
+                });
+                
+                summaryHtml += '</div>';
+                
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                    background: rgba(0,0,0,0.5); z-index: 1000; display: flex; 
+                    align-items: center; justify-content: center;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="background: white; border-radius: 10px; padding: 30px; max-width: 800px; width: 90%; max-height: 80%; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2>Account Summary (${currentTimeType === 'range' ? currentTimeRange + ' days range' : getDayLabel(currentDaysBack) + ' only'}) - ${currentKubernetesEnabled ? 'Kubernetes ' : ''}${currentEventType === 'anomaly' ? 'Anomaly' : 'Total'} Events</h2>
+                            <button onclick="this.closest('.modal').remove()" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">×</button>
+                        </div>
+                        ${summaryHtml}
+                    </div>
+                `;
+                
+                modal.className = 'modal';
+                document.body.appendChild(modal);
+                
+            } catch (error) {
+                showMessage('Failed to load account summary', 'error');
+            }
+        }
+
+        function showMessage(message, type = 'info') {
+            const container = document.getElementById('message-container');
+            let messageClass;
+            
+            switch(type) {
+                case 'error':
+                    messageClass = 'error-message';
+                    break;
+                case 'success':
+                    messageClass = 'success-message';
+                    break;
+                case 'warning':
+                    messageClass = 'warning-message';
+                    break;
+                default:
+                    messageClass = 'info-message';
+            }
+            
+            container.innerHTML = `<div class="${messageClass}">${message}</div>`;
+            
+            // Auto-hide non-error messages after 5 seconds
+            if (type !== 'error') {
+                setTimeout(() => {
+                    if (container.innerHTML.includes(messageClass)) {
+                        container.innerHTML = '';
+                    }
+                }, 5000);
+            }
+        }
+
+        function updateConnectionStatus(isConnected, message = '') {
+            const statusElement = document.getElementById('connection-status');
+            const textElement = document.getElementById('connection-text');
+            
+            if (isConnected) {
+                statusElement.className = 'status-indicator status-online';
+                textElement.textContent = 'Connected';
+            } else {
+                statusElement.className = 'status-indicator status-offline';
+                textElement.textContent = message || 'Disconnected';
+            }
+        }
+
+        function showLoading() {
+            if (isLoading) return;
+            isLoading = true;
+            
+            // Show loading spinner in status bar
+            const connectionText = document.getElementById('connection-text');
+            if (connectionText) {
+                connectionText.textContent = 'Loading...';
+                connectionText.style.color = '#f39c12';
+            }
+        }
+
+        function hideLoading() {
+            isLoading = false;
+            
+            // Hide loading spinner
+            const connectionText = document.getElementById('connection-text');
+            if (connectionText) {
+                connectionText.textContent = 'Connected';
+                connectionText.style.color = 'white';
+            }
+            
+            const container = document.getElementById('message-container');
+            if (container.innerHTML.includes('loading-spinner')) {
+                container.innerHTML = '';
+            }
+        }
+
+        function updateStatusBar() {
+            // Use consistent selected day data for status bar
+            const totalEventsSelected = dashboardData.total_events_selected || 0;
+            const totalEventsToday = dashboardData.total_events_today || 0;
+            const totalTenants = dashboardData.total_tenants || 0;
+            const totalAccounts = dashboardData.total_accounts || 0;
+            const activeTenantsSelected = dashboardData.active_tenants_selected || 0;
+            const activeAccountsSelected = dashboardData.active_accounts_selected || 0;
+            
+            // Update the main total events display to show selected period data
+            document.getElementById('total-events').textContent = totalEventsSelected.toLocaleString();
+            document.getElementById('total-events-today').textContent = totalEventsToday.toLocaleString();
+            document.getElementById('total-tenants').textContent = totalTenants;
+            document.getElementById('total-accounts').textContent = totalAccounts;
+            document.getElementById('active-tenants').textContent = activeTenantsSelected;
+            document.getElementById('active-accounts').textContent = activeAccountsSelected;
+            
+            // Update labels to reflect current time selection
+            updateStatusBarLabels();
+        }
+
+        function updateTimestamp() {
+            const timestamp = dashboardData.last_updated || new Date().toLocaleString();
+            const statusIndicator = dashboardData.status === 'success' ? 
+                '<span class="status-indicator status-online"></span>' : 
+                '<span class="status-indicator status-warning"></span>';
+            
+            let timeDescription = '';
+            let eventTypeLabel;
+            if (currentEventType === 'anomaly') {
+                eventTypeLabel = 'Anomaly';
+            } else if (currentEventType === 'total') {
+                eventTypeLabel = 'Total';
+            }
+            let kubernetesLabel = currentKubernetesEnabled ? 'Kubernetes ' : '';
+            if (currentTimeType === 'range') {
+                timeDescription = `${currentTimeRange} days range (${kubernetesLabel}${eventTypeLabel} events)`;
+            } else {
+                timeDescription = `${getDayLabel(currentDaysBack)} only (${kubernetesLabel}${eventTypeLabel} events)`;
+            }
+            
+            document.getElementById('last-updated').innerHTML = 
+                `${statusIndicator}Last updated: ${timestamp} (${timeDescription})`;
+        }
+
+        function updateAllCharts() {
+            // Only update charts that are currently visible
+            if (currentView !== 'hierarchy') {
+                updateMainChart();
+                updateDailyChart();
+                updateDetectionChart();
+            } else {
+                updateHierarchyView();
+            }
+            
+            // Update hierarchy title with current event type
+            const hierarchyTitle = document.getElementById('hierarchy-title');
+            if (hierarchyTitle) {
+                let eventTypeLabel;
+                if (currentEventType === 'anomaly') {
+                    eventTypeLabel = 'Anomaly';
+                } else if (currentEventType === 'total') {
+                    eventTypeLabel = 'Total';
+                }
+                let kubernetesLabel = currentKubernetesEnabled ? 'Kubernetes ' : '';
+                hierarchyTitle.textContent = `Tenant-Account Hierarchy (${kubernetesLabel}${eventTypeLabel} Events)`;
+            }
+        }
+
+        function updateMainChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            if (mainChartInstance) {
+                mainChartInstance.destroy();
+            }
+            
+            let dataToShow = {};
+            let chartTitle = '';
+            
+            if (currentView === 'tenant') {
+                // Use selected day tenant data consistently
+                dataToShow = dashboardData.selected_day_tenants || {};
+                chartTitle = `All Tenants`;
+                
+            } else if (currentView === 'account') {
+                const accountData = dashboardData.accounts || {};
+                const selectedDayAccountData = dashboardData.selected_day_accounts || {};
+                
+                dataToShow = Object.fromEntries(
+                    Object.entries(selectedDayAccountData).map(([accountKey, count]) => {
+                        const accountInfo = accountData[accountKey] || {};
+                        const displayName = `${accountInfo.tenant || 'Unknown'}|${accountInfo.account_id || accountKey}`;
+                        return [displayName, count || 0];
+                    })
+                );
+                chartTitle = `All Accounts`;
+                
+            } else if (currentView === 'combined') {
+                const tenantData = dashboardData.tenants || {};
+                const selectedDayTenantData = dashboardData.selected_day_tenants || {};
+                dataToShow = {};
+                
+                const hierarchicalEntries = [];
+                
+                // Get tenants sorted by selected day data (consistent with other views)
+                const tenantsWithSelectedDayData = Object.entries(selectedDayTenantData)
+                    .filter(([tenant, count]) => count > 0)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+                
+                tenantsWithSelectedDayData.forEach(([tenant, selectedDayEvents]) => {
+                    hierarchicalEntries.push([`${tenant} (Total)`, selectedDayEvents]);
+                    
+                    const tenantAccounts = tenantData[tenant]?.accounts || {};
+                    const topAccountsForSelectedDay = Object.entries(tenantAccounts)
+                        .map(([accountId, accountData]) => {
+                            let accountSelectedDayEvents = 0;
+                            if (currentTimeType === 'range') {
+                                accountSelectedDayEvents = accountData.total || 0;
+                            } else {
+                                const selectedDate = getDateForDaysBack(currentDaysBack);
+                                accountSelectedDayEvents = accountData.daily[selectedDate] || 0;
+                            }
+                            return [accountId, accountData, accountSelectedDayEvents];
+                        })
+                        .filter(([accountId, accountData, accountSelectedDayEvents]) => accountSelectedDayEvents > 0)
+                        .sort((a, b) => b[2] - a[2])
+                        .slice(0, 2);
+                    
+                    topAccountsForSelectedDay.forEach(([accountId, accountData, accountSelectedDayEvents]) => {
+                        hierarchicalEntries.push([`  └ ${accountId}`, accountSelectedDayEvents]);
+                    });
+                });
+                
+                dataToShow = Object.fromEntries(hierarchicalEntries);
+                chartTitle = `Combined View - Tenants + Top Accounts`;
+            }
+            
+            if (Object.keys(dataToShow).length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#7f8c8d';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data available for current view', 
+                    ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            let sortedData;
+            if (currentView === 'combined') {
+                sortedData = Object.entries(dataToShow).slice(0, 25);
+            } else {
+                sortedData = Object.entries(dataToShow)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 25);
+            }
+            
+            const labels = sortedData.map(([name, count]) => name);
+            const data = sortedData.map(([name, count]) => count);
+            
+            const colors = data.map((value, index) => {
+                if (value === 0) {
+                    return 'rgba(149, 165, 166, 0.6)';
+                } else if (currentView === 'combined' && labels[index].startsWith('  └')) {
+                    return 'rgba(46, 204, 113, 0.7)';
+                } else {
+                    const intensity = 0.8 - (index * 0.02);
+                    return `rgba(52, 152, 219, ${Math.max(intensity, 0.3)})`;
+                }
+            });
+            
+            mainChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Anomalous Events Count',
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: chartTitle,
+                            font: { size: 16, weight: 'bold' },
+                            padding: 20
+                        },
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            callbacks: {
+                                title: function(context) {
+                                    return `${currentView === 'account' ? 'Account' : 'Entity'}: ${context[0].label}`;
+                                },
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    if (value === 0) {
+                                        return 'Events: 0 (No anomalies)';
+                                    }
+                                    return `Events: ${value.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Number of Anomalous Events' },
+                            ticks: { callback: function(value) { return value.toLocaleString(); } }
+                        },
+                        x: {
+                            title: { display: true, text: currentView === 'account' ? 'Account Names' : 'Entity Names' },
+                            ticks: { 
+                                maxRotation: 45, 
+                                minRotation: 45,
+                                callback: function(value, index) {
+                                    const label = this.getLabelForValue(value);
+                                    return label.length > 15 ? label.substring(0, 15) + '...' : label;
+                                }
+                            }
+                        }
+                    },
+                    animation: { duration: 1000, easing: 'easeInOutQuart' }
+                }
+            });
+        }
+
+        function updateDailyChart() {
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            
+            if (dailyChartInstance) {
+                dailyChartInstance.destroy();
+            }
+            
+            const dailyTotals = dashboardData.daily_totals || {};
+            
+            if (Object.keys(dailyTotals).length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#7f8c8d';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No daily trend data available', 
+                    ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            const sortedDates = Object.keys(dailyTotals).sort();
+            const labels = sortedDates;
+            const data = sortedDates.map(date => dailyTotals[date] || 0);
+            
+            dailyChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `Daily ${currentKubernetesEnabled ? 'Kubernetes ' : ''}${currentEventType === 'anomaly' ? 'Anomalous' : 'Total'} Events (${currentTimeRange} days)`,
+                        data: data,
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgba(231, 76, 60, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Events Count' },
+                            ticks: { callback: function(value) { return value.toLocaleString(); } }
+                        },
+                        x: {
+                            title: { display: true, text: 'Date' }
+                        }
+                    },
+                    animation: { duration: 1000 }
+                }
+            });
+        }
+
+
+
+        function updateDetectionChart() {
+            const ctx = document.getElementById('detectionChart').getContext('2d');
+            
+            if (detectionChartInstance) {
+                detectionChartInstance.destroy();
+            }
+            
+            const detectionTypes = {};
+            const tenantData = dashboardData.tenants || {};
+            const selectedDayTenantData = dashboardData.selected_day_tenants || {};
+            
+            // Calculate detection types based on selected time period
+            if (currentTimeType === 'range') {
+                // For range mode, use all detection data from the time range
+                Object.values(tenantData).forEach(tenant => {
+                    const detections = tenant.detections || {};
+                    Object.entries(detections).forEach(([type, count]) => {
+                        detectionTypes[type] = (detectionTypes[type] || 0) + count;
+                    });
+                });
+            } else {
+                // For single day mode, calculate detection types for the specific day
+                const selectedDate = getDateForDaysBack(currentDaysBack);
+                
+                // Only process tenants that have events on the selected day
+                Object.entries(selectedDayTenantData).forEach(([tenantName, dayEvents]) => {
+                    if (dayEvents > 0) {
+                        const tenant = tenantData[tenantName];
+                        if (tenant) {
+                            const accounts = tenant.accounts || {};
+                            
+                            // Process each account's detection types for the selected day
+                            Object.values(accounts).forEach(account => {
+                                const accountDayEvents = account.daily[selectedDate] || 0;
+                                if (accountDayEvents > 0) {
+                                    const accountDetections = account.detections || {};
+                                    const totalAccountEvents = account.total || 1;
+                                    const ratio = accountDayEvents / totalAccountEvents;
+                                    
+                                    // Scale detection types proportionally for the selected day
+                                    Object.entries(accountDetections).forEach(([type, count]) => {
+                                        const scaledCount = Math.round(count * ratio);
+                                        if (scaledCount > 0) {
+                                            detectionTypes[type] = (detectionTypes[type] || 0) + scaledCount;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            
+            if (Object.keys(detectionTypes).length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#7f8c8d';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No detection type data available', 
+                    ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            const sortedDetections = Object.entries(detectionTypes)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8);
+            
+            const labels = sortedDetections.map(([type, count]) => type);
+            const data = sortedDetections.map(([type, count]) => count);
+            
+            const colors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+            ];
+            
+            detectionChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 8,
+                                font: { size: 10 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: { duration: 1000 }
+                }
+            });
+        }
+
+        function updateHierarchyView() {
+            const container = document.getElementById('hierarchy-content');
+            const tenantData = dashboardData.tenants || {};
+            const selectedDayTenantData = dashboardData.selected_day_tenants || {};
+            
+            if (Object.keys(tenantData).length === 0) {
+                container.innerHTML = '<div class="no-data-message">No hierarchy data available</div>';
+                return;
+            }
+            
+            let hierarchyHtml = '';
+            
+            // Sort tenants by selected day data (consistent with other views)
+            const sortedTenants = Object.entries(selectedDayTenantData)
+                .sort((a, b) => b[1] - a[1]);
+            
+            sortedTenants.forEach(([tenantName, selectedDayEvents]) => {
+                const tenantInfo = tenantData[tenantName] || {};
+                const accounts = tenantInfo.accounts || {};
+                const accountCount = Object.keys(accounts).length;
+                
+                // Calculate active accounts for selected period
+                let activeAccounts = 0;
+                if (currentTimeType === 'range') {
+                    activeAccounts = Object.values(accounts).filter(a => (a.total || 0) > 0).length;
+                } else {
+                    const selectedDate = getDateForDaysBack(currentDaysBack);
+                    activeAccounts = Object.values(accounts).filter(a => (a.daily[selectedDate] || 0) > 0).length;
+                }
+                
+                const timeLabel = currentTimeType === 'range' ? `${currentTimeRange}d` : getDayLabel(currentDaysBack);
+                
+                hierarchyHtml += `
+                    <div class="tenant-section">
+                        <div class="tenant-header" onclick="toggleTenantExpansion('${tenantName}')">
+                            <div class="tenant-name">${tenantName}</div>
+                            <div class="tenant-stats">
+                                <div class="tenant-stat">
+                                    <div class="number">${selectedDayEvents}</div>
+                                    <div class="label">Events (${timeLabel})</div>
+                                </div>
+                                <div class="tenant-stat">
+                                    <div class="number">${activeAccounts}/${accountCount}</div>
+                                    <div class="label">Active Accounts</div>
+                                </div>
+                                <div class="toggle-icon" id="toggle-${tenantName}">▼</div>
+                            </div>
+                        </div>
+                        <div class="tenant-accounts" id="accounts-${tenantName}">
+                `;
+                
+                // Sort accounts by selected day data
+                const accountsWithSelectedData = Object.entries(accounts).map(([accountId, accountInfo]) => {
+                    let accountEvents = 0;
+                    if (currentTimeType === 'range') {
+                        accountEvents = accountInfo.total || 0;
+                    } else {
+                        const selectedDate = getDateForDaysBack(currentDaysBack);
+                        accountEvents = accountInfo.daily[selectedDate] || 0;
+                    }
+                    return [accountId, accountInfo, accountEvents];
+                }).sort((a, b) => b[2] - a[2]);
+                
+                accountsWithSelectedData.forEach(([accountId, accountInfo, accountEvents]) => {
+                    const detections = accountInfo.detections || {};
+                    
+                    // Calculate relevant detection types and their actual counts for selected period
+                    let relevantDetections = {};
+                    let relevantDetectionTypes = 0;
+                    
+                    if (currentTimeType === 'range') {
+                        // For range mode, use all detection data
+                        relevantDetections = detections;
+                        relevantDetectionTypes = Object.keys(detections).length;
+                    } else {
+                        // For single day, calculate actual detection counts for selected day
+                        if (accountEvents > 0) {
+                            const totalAccountEvents = accountInfo.total || 1;
+                            const ratio = accountEvents / totalAccountEvents;
+                            
+                            Object.entries(detections).forEach(([type, count]) => {
+                                const scaledCount = Math.round(count * ratio);
+                                if (scaledCount > 0) {
+                                    relevantDetections[type] = scaledCount;
+                                    relevantDetectionTypes++;
+                                }
+                            });
+                        }
+                    }
+                    
+                    const detectionBreakdownId = `detection-${tenantName}-${accountId}`.replace(/[^a-zA-Z0-9]/g, '_');
+                    
+                    hierarchyHtml += `
+                        <div class="account-item" onclick="toggleDetectionBreakdown('${detectionBreakdownId}')" style="cursor: pointer;">
+                            <div class="account-header">
+                                <span class="account-id">${accountId}</span>
+                                <span class="account-events">${accountEvents} events</span>
+                            </div>
+                            <div class="account-tenant">
+                                <span class="detection-types-toggle" onclick="event.stopPropagation(); toggleDetectionBreakdown('${detectionBreakdownId}')">
+                                    Detection Types: ${relevantDetectionTypes} (Click anywhere to view)
+                                </span>
+                                <div class="detection-breakdown" id="${detectionBreakdownId}">
+                    `;
+                    
+                    if (relevantDetectionTypes > 0) {
+                        const sortedDetections = Object.entries(relevantDetections)
+                            .sort((a, b) => b[1] - a[1]);
+                        
+                        sortedDetections.forEach(([detectionType, displayCount]) => {
+                            hierarchyHtml += `
+                                <div class="detection-type-item">
+                                    <span class="detection-type-name">${detectionType}</span>
+                                    <span class="detection-type-count">${displayCount}</span>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        hierarchyHtml += `
+                            <div class="detection-type-item">
+                                <span class="detection-type-name">No detection types for selected period</span>
+                                <span class="detection-type-count">0</span>
+                            </div>
+                        `;
+                    }
+                    
+                    hierarchyHtml += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                hierarchyHtml += '</div></div>';
+            });
+            
+            container.innerHTML = hierarchyHtml;
+        }
+
+        function toggleDetectionBreakdown(detectionBreakdownId) {
+            const detectionDiv = document.getElementById(detectionBreakdownId);
+            
+            if (detectionDiv && detectionDiv.classList.contains('expanded')) {
+                detectionDiv.classList.remove('expanded');
+            } else if (detectionDiv) {
+                detectionDiv.classList.add('expanded');
+            }
+        }
+
+        function toggleTenantExpansion(tenantName) {
+            const accountsDiv = document.getElementById(`accounts-${tenantName}`);
+            const toggleIcon = document.getElementById(`toggle-${tenantName}`);
+            
+            if (accountsDiv && accountsDiv.classList.contains('expanded')) {
+                accountsDiv.classList.remove('expanded');
+                if (toggleIcon) toggleIcon.classList.remove('expanded');
+            } else {
+                if (accountsDiv) accountsDiv.classList.add('expanded');
+                if (toggleIcon) toggleIcon.classList.add('expanded');
+            }
+        }
+
+        async function selectTimeOption(type, value) {
+            // Check if the same option is already selected
+            if (currentTimeType === type && currentTimeValue === value) return;
+            
+            document.querySelectorAll('.unified-time-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentTimeType = type;
+            currentTimeValue = value;
+            
+            if (type === 'range') {
+                currentTimeRange = value;
+                currentDaysBack = 0;
+                
+                showMessage(`Loading ${value}-day range...`, 'info');
+                
+            } else if (type === 'day') {
+                currentTimeRange = Math.max(value + 1, 7);
+                currentDaysBack = value;
+                
+                const dayLabel = getDayLabel(value);
+                showMessage(`Loading ${dayLabel.toLowerCase()} data...`, 'info');
+            }
+            
+            // Update chart titles immediately
+            updateChartTitle();
+            
+            try {
+                const response = await axios.get(`/api/timerange_data?days=${currentTimeRange}&provider=${currentCloudProvider}&event_type=${currentEventType}&kubernetes=${currentKubernetesEnabled}`, {
+                    timeout: requestTimeout
+                });
+                
+                if (response.data.status === 'success') {
+                    processTimerangeData(response.data.data);
+                    
+                    if (type === 'range') {
+                        showMessage(`Loaded ${value}-day range successfully`, 'success');
+                    } else {
+                        showMessage(`Loaded ${getDayLabel(value).toLowerCase()} data successfully`, 'success');
+                    }
+                } else {
+                    throw new Error(response.data.error_message || 'Failed to load data');
+                }
+            } catch (error) {
+                let errorMsg = 'Failed to load data';
+                if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                    errorMsg = `Request timed out after ${requestTimeout/1000} seconds. The data may be too large for the selected time range. Try selecting a shorter time period.`;
+                } else if (error.message) {
+                    errorMsg += `: ${error.message}`;
+                }
+                showMessage(errorMsg, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initDashboard);
+        
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                refreshData();
+            }
+        });
+        
+        window.addEventListener('online', function() {
+            refreshData();
+        });
+        
+        window.addEventListener('offline', function() {
+            updateConnectionStatus(false, 'Network Offline');
+        });
+
+        window.addEventListener('beforeunload', function() {
+            if (refreshTimer) {
+                clearTimeout(refreshTimer);
+            }
+        });
+    </script>
+</body>
+</html>
